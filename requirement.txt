@@ -1,0 +1,9 @@
+neo4j
+PyYAML
+networkx
+pandas
+numpy
+matplotlib
+plotly
+scikit-learn
+seaborn

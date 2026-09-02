@@ -1,0 +1,24 @@
+# Local credentials and generated Python files
+neo4j.env
+.env
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# Generated data
+data/
+results/
+*.csv
+*.json
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
