@@ -1,94 +1,113 @@
-# Fraud Ring Detection - Cycle Detection Approaches
+# Fraud Ring Generator & Cycle Detection
 
-This repository contains three different approaches to detect fraud rings (cycles) in Neo4j graphs as described in the `Cycle_Detection_Neo4j_Strategies.md` document.
+Synthetic data generator for fraud ring detection with multiple cycle detection approaches for Neo4j graphs.
 
-## Approaches Implemented
+## Project Structure
 
-### 1. Cypher-Based Approach (`src/cypher_approach.py`)
-Pure Cypher queries for cycle detection:
-- 3-node cycle detection (triangles)
-- Variable-length cycle detection (3-8 nodes)
-- Union-pattern approach for specific cycle sizes
+```
+fraud-ring-generator/
+├── README.md
+└── src/
+    ├── generators/v03/          # Synthetic data generator
+    └── cycle_detection/v02/     # Cycle detection algorithms
+```
 
-**Best for**: Small to medium graphs (<100k nodes), simple cycle patterns
+## Generators (`src/generators/v03/`)
 
-### 2. Neo4j GDS Approach (`src/gds_approach.py`)
-Uses Neo4j Graph Data Science library:
-- Strongly Connected Components (SCC) for cycle detection
-- Louvain community detection
-- Triangle counting
-- Betweenness centrality for identifying key nodes
+Generates synthetic fraud ring datasets with configurable parameters.
 
-**Best for**: Large graphs, production environments, real-time analytics
+### Features
 
-### 3. Hybrid Approach (`src/hybrid_approach.py`)
-Combines Neo4j GDS and NetworkX:
-- Fast initial filtering with GDS SCC
-- Detailed cycle analysis with NetworkX
-- Custom scoring algorithms
-- Results saved back to Neo4j as FraudRing nodes
+- Configurable number of normal accounts, fraudsters, and rings
+- Supports 3-person, 5-person, and 8-person fraud rings
+- Generates background transactions with bridge connections
+- Reproducible data generation with seed control
 
-**Best for**: Complex analysis, custom algorithms, combining multiple methods
+### Usage
+
+```bash
+python src/generators/v03/data_generator.py
+```
+
+### Configuration
+
+Edit `config_d3.yaml` or `config_academic.yaml` to customize:
+
+```yaml
+synthetic_data:
+  accounts:
+    normal_account_count: 5000
+  fraud_rings:
+    ring_distribution:
+      small_rings_3person: 15
+      medium_rings_5person: 15
+      large_rings_8person: 15
+```
+
+### Output
+
+- `accounts.csv` - Account data
+- `transactions.csv` - Transaction data
+- `merchants.csv` - Merchant data
+- `fraud_rings.json` - Ground truth ring definitions
+
+---
+
+## Cycle Detection (`src/cycle_detection/v02/`)
+
+Multiple approaches to detect fraud rings (cycles) in Neo4j graphs.
+
+### Approaches
+
+| Approach | File | Best For |
+|----------|------|----------|
+| **GDS SCC** | `gds_cycle_detection_v02.py` | Large graphs, production |
+| **Cypher** | `cypher_cycle_detection_v02.py` | Small-medium graphs |
+| **Hybrid** | `hybrid_networkx_cycle_detection_v02.py` | Complex analysis |
+
+### GDS SCC Detection
+
+```bash
+python src/cycle_detection/v02/gds_cycle_detection_v02.py \
+  --min-component-size 3 \
+  --max-component-size 12 \
+  --json-out results/summary.json \
+  --jsonl-out results/candidates.jsonl
+```
+
+### Cypher Detection
+
+```bash
+python src/cycle_detection/v02/cypher_cycle_detection_v02.py \
+  --cycle-sizes 3,5,8 \
+  --limit 0 \
+  --json-out results/summary.json
+```
+
+### Hybrid Detection
+
+```bash
+python src/cycle_detection/v02/hybrid_networkx_cycle_detection_v02.py \
+  --cycle-sizes 3,5,8 \
+  --json-out results/summary.json
+```
 
 ## Requirements
 
 - Python 3.7+
-- Neo4j database with appropriate plugins (APOC for Cypher approach, GDS for GDS/Hybrid approaches)
-- Python packages:
-  - neo4j
-  - networkx
-  - pandas
-  - numpy
-
-Install requirements with:
-```bash
-pip install neo4j networkx pandas numpy
-```
-
-## Usage
-
-Before running any script, ensure your Neo4j database is running and accessible. Update the connection details in each script:
-
-```python
-detector = CypherCycleDetector("bolt://localhost:7687", "neo4j", "password")
-```
-
-Run each approach:
+- Neo4j with GDS plugin
+- Python packages: `neo4j`, `networkx`, `pandas`, `numpy`, `pyyaml`
 
 ```bash
-python src/cypher_approach.py
-python src/gds_approach.py
-python src/hybrid_approach.py
+pip install neo4j networkx pandas numpy pyyaml
 ```
 
-## Expected Output
+## Neo4j Connection
 
-Each script will:
-1. Connect to Neo4j
-2. Execute the respective cycle detection approach
-3. Measure performance
-4. Display results summary
-5. Show sample detected cycles/rings
+Update connection in scripts or set environment:
 
-The Hybrid approach additionally:
-1. Saves detected rings to Neo4j as FraudRing nodes
-2. Creates MEMBER_OF relationships between Accounts and FraudRings
-
-## Performance Comparison
-
-Based on the analysis in the original document:
-
-| Method | Time (800 nodes) | Time (10k nodes) | Scalability |
-|--------|------------------|------------------|-------------|
-| Cypher (4-cycles) | 2-5 sec | 30+ sec | Poor |
-| Cypher (Union) | 1-2 sec | 10-20 sec | Fair |
-| GDS (SCC) | 100ms | 500ms | Excellent |
-| GDS (Louvain) | 150ms | 800ms | Excellent |
-| GDS (Triangles) | 50ms | 300ms | Excellent |
-| NetworkX (Pull) | 500ms | Timeout | Poor |
-
-## Notes
-
-- The scripts assume your Neo4j database has Account nodes with account_id properties and TRANSFER relationships
-- Additional properties like kyc_risk_score and monthly_transaction_count are used in scoring but are optional
-- The Hybrid approach creates new FraudRing nodes and MEMBER_OF relationships in your database
+```bash
+export NEO4J_URI="bolt://localhost:7687"
+export NEO4J_USER="neo4j"
+export NEO4J_PASSWORD="your_password"
+```
